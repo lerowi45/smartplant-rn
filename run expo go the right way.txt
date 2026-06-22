@@ -1,0 +1,12 @@
+The two commands allows expo go to build the app from the internet using
+ngrok provided web address. This prevents firewall problems
+and other issues when trying to connect expo go to a localhost like a laptop 
+to build and run the app
+ 
+ngrok http 8081 --host-header="localhost:8081"
+npx expo start --tunnel
+
+if the npx expo start --tunnel command fails then run this:
+npm uninstall @expo/ngrok
+npm install @expo/ngrok@^4.1.0
+npx expo start --tunnel

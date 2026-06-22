@@ -3,3 +3,6 @@ node_modules
 pycache__
 *.log  
 .env
+static/uploads
+venv
+.vscode/
