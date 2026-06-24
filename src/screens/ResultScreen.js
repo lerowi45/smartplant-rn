@@ -103,21 +103,24 @@ import { router } from 'expo-router';
 export default function ResultScreen() {
   const { result: resultJson, imageUri } = useLocalSearchParams();
   const result = JSON.parse(resultJson);
-  const isHealthy = result.disease_key === 'Healthy';
+  const isHealthy = result.disease_key?.toLowerCase().includes('healthy');
+  const isUncertain = result.disease_key?.toLowerCase().includes('uncertain');   
 
   // Trigger haptic feedback on load
   useEffect(() => {
     Haptics.notificationAsync(
       isHealthy
         ? Haptics.NotificationFeedbackType.Success
+        : isUncertain
+        ? Haptics.NotificationFeedbackType.Warning
         : Haptics.NotificationFeedbackType.Warning
     );
   }, []);
 
   const headerColor  = isHealthy ? COLORS.greenMid  : COLORS.greenDeep;
-  const badgeColor   = isHealthy ? COLORS.successLight : COLORS.dangerLight;
+  const badgeColor   = isHealthy ? COLORS.successLight : isUncertain ? '#fff8e8' : COLORS.dangerLight;
   const badgeText    = isHealthy ? COLORS.success      : COLORS.danger;
-  const badgeLabel   = isHealthy ? '✅  Healthy Plant' : '⚠️  Disease Detected';
+  const badgeLabel   = isHealthy ? '✅  Healthy Plant' : isUncertain ? '🔍  Unable to Identify' : '⚠️  Disease Detected';
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -161,18 +164,44 @@ export default function ResultScreen() {
 
         {/* ── CONTENT ── */}
         <View style={styles.body}>
+          
+
+          {/* Uncertain Message */}
+          {isUncertain && (
+            <View style={[cardStyles.card, { marginBottom: SPACING.md }]}>
+              <View style={cardStyles.titleRow}>
+                <Text style={cardStyles.icon}>🔍</Text>
+                <Text style={[cardStyles.title, { color: COLORS.warning }]}>Could not identify</Text>
+              </View>
+              <Text style={styles.descText}>{result.description}</Text>
+            </View>
+          )}
+
+
+          {/* Healthy Message */} 
+          {!isUncertain && isHealthy && (
+            <View style={[cardStyles.card, { marginBottom: SPACING.md }]}>
+              <View style={cardStyles.titleRow}>
+                <Text style={cardStyles.icon}>✅</Text>
+                <Text style={[cardStyles.title, { color: COLORS.greenDeep }]}>Plant Status</Text>
+              </View>
+              <Text style={styles.descText}>{result.description}</Text>
+            </View>
+          )}
 
           {/* Description */}
-          <View style={[cardStyles.card, { marginBottom: SPACING.md }]}>
-            <View style={cardStyles.titleRow}>
-              <Text style={cardStyles.icon}>📋</Text>
-              <Text style={[cardStyles.title, { color: COLORS.greenDeep }]}>About this disease</Text>
+          {!isUncertain && !isHealthy && (
+            <View style={[cardStyles.card, { marginBottom: SPACING.md }]}>
+              <View style={cardStyles.titleRow}>
+                <Text style={cardStyles.icon}>📋</Text>
+                <Text style={[cardStyles.title, { color: COLORS.greenDeep }]}>About this disease</Text>
+              </View>
+              <Text style={styles.descText}>{result.description}</Text>
             </View>
-            <Text style={styles.descText}>{result.description}</Text>
-          </View>
+          )}
 
           {/* Symptoms */}
-          {!isHealthy && (
+          {!isHealthy && !isUncertain && (
             <InfoCard
               icon="🔴"
               title="Symptoms to look for"
@@ -182,7 +211,7 @@ export default function ResultScreen() {
           )}
 
           {/* Treatment */}
-          {!isHealthy && (
+          {!isHealthy && !isUncertain && (
             <InfoCard
               icon="💊"
               title="Recommended Treatment"
@@ -191,16 +220,25 @@ export default function ResultScreen() {
             />
           )}
 
-          {/* Prevention */}
-          <InfoCard
-            icon="🛡️"
-            title="Prevention Tips"
-            items={result.prevention}
-            color={COLORS.greenMid}
-          />
+          {/* Prevention / Tips */}
+          {isUncertain ? (
+            <InfoCard
+              icon="💡"
+              title="Tips to get better results"
+              items={result.prevention}
+              color={COLORS.warning}
+            />
+          ) : (
+            <InfoCard
+              icon="🛡️"
+              title="Prevention Tips"
+              items={result.prevention}
+              color={COLORS.greenMid}
+            />
+          )}
 
           {/* Severity Indicator */}
-          {!isHealthy && (
+          {!isHealthy && !isUncertain && (
             <View style={styles.severityCard}>
               <Text style={styles.severityTitle}>⚡ Act quickly!</Text>
               <Text style={styles.severityText}>
@@ -266,9 +304,11 @@ const styles = StyleSheet.create({
 
   badge: {
     paddingHorizontal: SPACING.lg, paddingVertical: SPACING.xs,
-    borderRadius: RADIUS.full, marginBottom: SPACING.sm,
+    borderRadius: RADIUS.md, marginBottom: SPACING.sm,
+    maxWidth: '90%', width: 180,alignSelf: 'center',
+    
   },
-  badgeText: { fontSize: 13, fontWeight: '700' },
+  badgeText: { fontSize: 13, fontWeight: '700', textAlign: 'center', },
 
   diseaseName: {
     fontSize: 26, fontWeight: '900', color: COLORS.white,

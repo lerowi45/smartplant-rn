@@ -11,6 +11,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, SPACING, RADIUS, SHADOW } from '../utils/theme';
 import { analyzeImage } from '../utils/api';
+import { saveScan } from '../utils/historyService';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -23,7 +24,7 @@ const CROPS = [
 ];
 
 export default function HomeScreen() {
-  const [image, setImage]         = useState(null);
+  const [image, setImage] = useState(null);
   const [cropType, setCropType]   = useState('general');
   const [loading, setLoading]     = useState(false);
 
@@ -43,6 +44,8 @@ export default function HomeScreen() {
       aspect: [1, 1],
       quality: 0.8,
     });
+
+    console.log('Result:', JSON.stringify(result));  // ← add this
 
     if (!result.canceled) {
       setImage(result.assets[0].uri);
@@ -84,6 +87,19 @@ export default function HomeScreen() {
       const result = await analyzeImage(image, cropType);
 
      if (result.success) {
+      // Save scan to history
+      await saveScan({
+        imageUri: image,
+        disease_key: result.disease_key,
+        name: result.name,
+        crop: result.crop,
+        confidence: result.confidence,
+        description: result.description,
+        symptoms: result.symptoms,
+        treatment: result.treatment,
+        prevention: result.prevention,
+      });
+
       router.push({
         pathname: '/result',
         params: {
@@ -91,8 +107,7 @@ export default function HomeScreen() {
           imageUri: image,
         },
       });
-        // Clear image after push/navigation
-        setImage(null);
+        
       } else {
         Alert.alert('Analysis failed', result.error || 'Something went wrong. Please try again.');
       }
@@ -118,6 +133,15 @@ export default function HomeScreen() {
           colors={[COLORS.greenDeep, COLORS.greenMid]}
           style={styles.header}
         >
+
+          {/* Add history button in top right */}
+          <TouchableOpacity
+            style={styles.historyBtn}
+            onPress={() => router.push('/history')}
+          >
+            <Text style={styles.historyBtnText}>📋 History</Text>
+          </TouchableOpacity>
+
           <Text style={styles.headerEmoji}>🌿</Text>
           <Text style={styles.headerTitle}>SmartPlant AI</Text>
           <Text style={styles.headerSub}>Plant Disease Detection</Text>
@@ -377,11 +401,14 @@ const styles = StyleSheet.create({
 
   // Preview
   previewContainer: {
-    borderRadius: RADIUS.lg, overflow: 'hidden', ...SHADOW.card,
+    borderRadius: RADIUS.lg,
+    ...SHADOW.card,
   },
   previewImage: {
-    width: '100%', height: 280,
+    width: '100%',
+    height: 280,
     borderRadius: RADIUS.lg,
+    overflow: 'hidden',
   },
   removeBtn: {
     position: 'absolute', top: SPACING.md, right: SPACING.md,
@@ -422,4 +449,15 @@ const styles = StyleSheet.create({
     textAlign: 'center', color: COLORS.textSoft,
     fontSize: 12, lineHeight: 20, marginTop: SPACING.md,
   },
+
+  historyBtn: {
+    alignSelf: 'flex-end',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs,
+    borderRadius: RADIUS.full,
+    marginBottom: SPACING.sm,
+},
+historyBtnText: { color: COLORS.white, fontSize: 13, fontWeight: '600' },
+
 });
