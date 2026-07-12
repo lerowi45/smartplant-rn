@@ -10,18 +10,6 @@ from flask import Flask, request, jsonify
 from werkzeug.utils import secure_filename
 from PIL import Image
 import numpy as np
-# app.py — Updated Flask backend for React Native frontend
-# Key changes from original:
-#   1. Added /health endpoint (React Native checks this on startup)
-#   2. Added CORS headers (React Native needs these to talk to Flask)
-#   3. Added crop_type parameter to choose between models
-
-import os
-import json
-from flask import Flask, request, jsonify
-from werkzeug.utils import secure_filename
-from PIL import Image
-import numpy as np
 import tensorflow as tf
 import keras
 from dotenv import load_dotenv
