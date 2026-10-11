@@ -6,3 +6,4 @@ pycache__
 static/uploads
 venv
 .vscode/
+*test_

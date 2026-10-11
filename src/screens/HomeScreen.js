@@ -18,9 +18,11 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 // Crop options — 'general' uses PlantVillage model, 'cassava' uses Ghana model
 const CROPS = [
   { id: 'general', label: 'General',  emoji: '🌿', desc: 'Tomato, Maize, Potato & more' },
-  { id: 'cassava', label: 'Cassava',  emoji: '🍠', desc: 'Ghana cassava diseases' },
+  { id: 'cassava', label: 'Cassava',  emoji: '🍠', desc: 'cassava diseases' },
   { id: 'tomato',  label: 'Tomato',   emoji: '🍅', desc: 'Tomato specific diseases' },
   { id: 'maize',   label: 'Maize',    emoji: '🌽', desc: 'Corn / maize diseases' },
+  { id: 'rice',    label: 'Rice',     emoji: '🌾', desc: 'Rice specific diseases' },
+  { id: 'potato',  label: 'Potato',   emoji: '🥔', desc: 'Potato specific diseases' },
 ];
 
 export default function HomeScreen() {
@@ -291,7 +293,7 @@ export default function HomeScreen() {
           </View>
 
           <Text style={styles.footer}>
-            Built for Ghanaian farmers 🌾{'\n'}SmartPlant AI — Final Year Project
+            Built for farmers and stakeholders 🌾{'\n'}SmartPlant AI
           </Text>
 
         </View>
