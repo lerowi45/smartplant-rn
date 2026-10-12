@@ -150,7 +150,7 @@ export default function HomeScreen() {
 
           {/*stats row*/}
           <View style={styles.statsRow}>
-            {[['38+', 'Diseases'], ['95%', 'Accuracy'], ['2', 'Models']].map(([num, label]) => (
+            {[['30+', 'Diseases'], ['95%', 'Accuracy'], ['2', 'Models']].map(([num, label]) => (
               <View key={label} style={styles.statItem}>
                 <Text style={styles.statNum}>{num}</Text>
                 <Text style={styles.statLabel}>{label}</Text>
