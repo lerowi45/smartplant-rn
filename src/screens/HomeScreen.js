@@ -1,4 +1,4 @@
-// src/screens/HomeScreen.js
+
 import { router } from 'expo-router';
 import React, { useState, useCallback } from 'react';
 import {
@@ -15,12 +15,14 @@ import { saveScan } from '../utils/historyService';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// Crop options — 'general' uses PlantVillage model, 'cassava' uses Ghana model
+//crop options: 'general' is the default selected and other options provide crop specific context.
 const CROPS = [
   { id: 'general', label: 'General',  emoji: '🌿', desc: 'Tomato, Maize, Potato & more' },
-  { id: 'cassava', label: 'Cassava',  emoji: '🍠', desc: 'Ghana cassava diseases' },
+  { id: 'cassava', label: 'Cassava',  emoji: '🍠', desc: 'cassava diseases' },
   { id: 'tomato',  label: 'Tomato',   emoji: '🍅', desc: 'Tomato specific diseases' },
   { id: 'maize',   label: 'Maize',    emoji: '🌽', desc: 'Corn / maize diseases' },
+  { id: 'rice',    label: 'Rice',     emoji: '🌾', desc: 'Rice specific diseases' },
+  { id: 'potato',  label: 'Potato',   emoji: '🥔', desc: 'Potato specific diseases' },
 ];
 
 export default function HomeScreen() {
@@ -28,7 +30,7 @@ export default function HomeScreen() {
   const [cropType, setCropType]   = useState('general');
   const [loading, setLoading]     = useState(false);
 
-  // ── Pick from Gallery ──────────────────────────────────────────────────────
+  //pick from gallery
   const pickFromGallery = useCallback(async () => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
@@ -45,14 +47,14 @@ export default function HomeScreen() {
       quality: 0.8,
     });
 
-    console.log('Result:', JSON.stringify(result));  // ← add this
+    console.log('Result:', JSON.stringify(result));  //log the result for debugging
 
     if (!result.canceled) {
       setImage(result.assets[0].uri);
     }
   }, []);
 
-  // ── Take Photo with Camera ─────────────────────────────────────────────────
+  //take Photo with Camera
   const takePhoto = useCallback(async () => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
@@ -73,7 +75,7 @@ export default function HomeScreen() {
     }
   }, []);
 
-  // ── Analyse Image ──────────────────────────────────────────────────────────
+  //analyse image
   const handleAnalyse = useCallback(async () => {
     if (!image) {
       Alert.alert('No image', 'Please select or take a photo first.');
@@ -87,7 +89,7 @@ export default function HomeScreen() {
       const result = await analyzeImage(image, cropType);
 
      if (result.success) {
-      // Save scan to history
+      //save scan to history
       await saveScan({
         imageUri: image,
         disease_key: result.disease_key,
@@ -128,13 +130,13 @@ export default function HomeScreen() {
       <StatusBar barStyle="light-content" backgroundColor={COLORS.greenDeep} />
       <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
 
-        {/* ── HEADER ── */}
+        {/*header*/}
         <LinearGradient
           colors={[COLORS.greenDeep, COLORS.greenMid]}
           style={styles.header}
         >
 
-          {/* Add history button in top right */}
+          {/*add history button in top right*/}
           <TouchableOpacity
             style={styles.historyBtn}
             onPress={() => router.push('/history')}
@@ -146,7 +148,7 @@ export default function HomeScreen() {
           <Text style={styles.headerTitle}>SmartPlant AI</Text>
           <Text style={styles.headerSub}>Plant Disease Detection</Text>
 
-          {/* Stats Row */}
+          {/*stats row*/}
           <View style={styles.statsRow}>
             {[['38+', 'Diseases'], ['95%', 'Accuracy'], ['2', 'Models']].map(([num, label]) => (
               <View key={label} style={styles.statItem}>
@@ -159,7 +161,7 @@ export default function HomeScreen() {
 
         <View style={styles.body}>
 
-          {/* ── CROP SELECTOR ── */}
+          {/*crop selecter*/}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Select Crop Type</Text>
             <Text style={styles.sectionSub}>This determines which AI model is used</Text>
@@ -195,13 +197,13 @@ export default function HomeScreen() {
             </ScrollView>
           </View>
 
-          {/* ── IMAGE SECTION ── */}
+          {/*image section*/}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Upload Plant Photo</Text>
             <Text style={styles.sectionSub}>Take a clear photo of the affected leaf or plant part</Text>
 
             {image ? (
-              // Image Preview
+              //image Preview
               <View style={styles.previewContainer}>
                 <Image source={{ uri: image }} style={styles.previewImage} />
                 <TouchableOpacity
@@ -212,7 +214,7 @@ export default function HomeScreen() {
                 </TouchableOpacity>
               </View>
             ) : (
-              // Upload Options
+              //upload Options
               <View style={styles.uploadArea}>
                 <Text style={styles.uploadIcon}>🍃</Text>
                 <Text style={styles.uploadTitle}>No image selected</Text>
@@ -245,7 +247,7 @@ export default function HomeScreen() {
             )}
           </View>
 
-          {/* ── ANALYSE BUTTON ── */}
+          {/*analyse button*/}
           <TouchableOpacity
             style={[styles.analyseBtn, (!image || loading) && styles.analyseBtnDisabled]}
             onPress={handleAnalyse}
@@ -269,7 +271,7 @@ export default function HomeScreen() {
             </LinearGradient>
           </TouchableOpacity>
 
-          {/* ── HOW IT WORKS ── */}
+          {/*how it works*/}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>How it works</Text>
             {[
@@ -291,7 +293,7 @@ export default function HomeScreen() {
           </View>
 
           <Text style={styles.footer}>
-            Built for Ghanaian farmers 🌾{'\n'}SmartPlant AI — Final Year Project
+            Built for farmers and stakeholders 🌾{'\n'}SmartPlant AI
           </Text>
 
         </View>
@@ -303,7 +305,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.greenDeep },
 
-  // Header
+  //header
   header: {
     alignItems: 'center',
     paddingTop: SPACING.lg,
@@ -327,7 +329,7 @@ const styles = StyleSheet.create({
   statNum: { fontSize: 24, color: COLORS.greenLight, fontWeight: '800' },
   statLabel: { fontSize: 11, color: COLORS.greenPale, opacity: 0.7, marginTop: 2 },
 
-  // Body
+  //body
   body: {
     backgroundColor: COLORS.cream,
     borderTopLeftRadius: 28, borderTopRightRadius: 28,
@@ -337,7 +339,7 @@ const styles = StyleSheet.create({
     paddingBottom: SPACING.xxl,
   },
 
-  // Section
+  //section
   section: { marginBottom: SPACING.xl },
   sectionTitle: {
     fontSize: 18, fontWeight: '700', color: COLORS.greenDeep,
@@ -347,7 +349,7 @@ const styles = StyleSheet.create({
     fontSize: 13, color: COLORS.textSoft, marginBottom: SPACING.md,
   },
 
-  // Crop Selector
+  //crop selector
   cropScroll: { paddingRight: SPACING.md, gap: SPACING.sm },
   cropCard: {
     width: 130, padding: SPACING.md,
@@ -375,7 +377,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
 
-  // Upload Area
+  //upload Area
   uploadArea: {
     backgroundColor: COLORS.white, borderRadius: RADIUS.lg,
     padding: SPACING.xl, alignItems: 'center',
@@ -399,7 +401,7 @@ const styles = StyleSheet.create({
   },
   uploadBtnSub: { fontSize: 11, color: COLORS.greenPale, opacity: 0.8 },
 
-  // Preview
+  //preview
   previewContainer: {
     borderRadius: RADIUS.lg,
     ...SHADOW.card,
@@ -418,7 +420,7 @@ const styles = StyleSheet.create({
   },
   removeBtnText: { color: COLORS.white, fontSize: 12, fontWeight: '600' },
 
-  // Analyse Button
+  //analyse button
   analyseBtn: { borderRadius: RADIUS.md, overflow: 'hidden', marginBottom: SPACING.xl, ...SHADOW.strong },
   analyseBtnDisabled: { opacity: 0.6 },
   analyseBtnGradient: {
@@ -429,7 +431,7 @@ const styles = StyleSheet.create({
     color: COLORS.white, fontSize: 17, fontWeight: '800', letterSpacing: 0.3,
   },
 
-  // Steps
+  //steps
   stepRow: {
     flexDirection: 'row', alignItems: 'flex-start',
     marginBottom: SPACING.md, gap: SPACING.md,

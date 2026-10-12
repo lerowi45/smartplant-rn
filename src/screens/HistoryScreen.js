@@ -13,7 +13,7 @@ import { COLORS, SPACING, RADIUS, SHADOW } from '../utils/theme';
 export default function HistoryScreen() {
   const [history, setHistory] = useState([]);
 
-  // Reload history every time screen is focused
+  //reload history every time screen is focused
   useFocusEffect(
     useCallback(() => {
       loadHistory();
@@ -93,10 +93,10 @@ export default function HistoryScreen() {
         onPress={() => handleViewScan(item)}
         activeOpacity={0.8}
       >
-        {/* Image */}
+        {/*image*/}
         <Image source={{ uri: item.imageUri }} style={styles.cardImage} />
 
-        {/* Content */}
+        {/*content*/}
         <View style={styles.cardContent}>
           <View style={[styles.badge, { backgroundColor: badgeColor }]}>
             <Text style={[styles.badgeText, { color: badgeText }]}>{badgeLabel}</Text>
@@ -107,7 +107,7 @@ export default function HistoryScreen() {
           <Text style={styles.date}>{formatDate(item.date)}</Text>
         </View>
 
-        {/* Delete Button */}
+        {/*delete button*/}
         <TouchableOpacity
           style={styles.deleteBtn}
           onPress={() => handleDelete(item.id)}
@@ -122,7 +122,7 @@ export default function HistoryScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.greenDeep} />
 
-      {/* Header */}
+      {/*header*/}
       <LinearGradient colors={[COLORS.greenDeep, COLORS.greenMid]} style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
           <Text style={styles.backBtnText}>← Back</Text>
@@ -136,7 +136,7 @@ export default function HistoryScreen() {
         )}
       </LinearGradient>
 
-      {/* List */}
+      {/*list*/}
       {history.length === 0 ? (
         <View style={styles.empty}>
           <Text style={styles.emptyIcon}>🌿</Text>

@@ -1,5 +1,4 @@
-// src/utils/theme.js
-// Shared design tokens used across all screens
+//shared design used across all screens
 
 export const COLORS = {
   greenDeep:   '#1a3a2a',
