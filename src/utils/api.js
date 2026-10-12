@@ -14,7 +14,7 @@
 
 export const API_BASE_URL = 'http://192.168.43.110:5001'; // ← UPDATE THIS (to the IP and port of your Flask server)
 
-DISEASE DETECTION
+//Desease detection
 
 /**
  * Send an image to the Flask backend for disease detection.
