@@ -1,5 +1,5 @@
 
-#prediction flow: MobileNetV2 (primary) → gemini (fallback) → uncertain
+#prediction flow: MobileNetV2(primary) => gemini (fallback) => uncertain
 
 import os
 import json
@@ -420,7 +420,7 @@ Respond in JSON only, with no markdown formatting or code blocks. Example format
         )
 
         print(f"Gemini raw response: {response.text}")
-        # Strip any accidental markdown
+        #strip any accidental markdown
         clean = response.text.strip().replace('```json', '').replace('```', '').strip()
         result = json.loads(clean)
         print(f"Gemini parsed result: {result}")

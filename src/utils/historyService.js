@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const HISTORY_KEY = 'smartplant_scan_history';
 
-// Save a new scan to history
+//save a new scan to history
 export const saveScan = async (scanData) => {
   try {
     const existing = await getHistory();
@@ -19,7 +19,7 @@ export const saveScan = async (scanData) => {
   }
 };
 
-// Get all scans from history
+//get all scans from history
 export const getHistory = async () => {
   try {
     const data = await AsyncStorage.getItem(HISTORY_KEY);
@@ -30,7 +30,7 @@ export const getHistory = async () => {
   }
 };
 
-// Delete a single scan by id
+//delete a single scan by id
 export const deleteScan = async (id) => {
   try {
     const existing = await getHistory();
@@ -41,7 +41,7 @@ export const deleteScan = async (id) => {
   }
 };
 
-// Clear all history
+//clear all history
 export const clearHistory = async () => {
   try {
     await AsyncStorage.removeItem(HISTORY_KEY);

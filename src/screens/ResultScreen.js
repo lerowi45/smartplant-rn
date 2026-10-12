@@ -1,4 +1,4 @@
-// src/screens/ResultScreen.js
+
 import React, { useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, Image, ScrollView,
@@ -11,7 +11,7 @@ import { COLORS, SPACING, RADIUS, SHADOW } from '../utils/theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// Confidence bar component with animation
+//confidence bar component with animation
 function ConfidenceBar({ confidence }) {
   const anim = useRef(new Animated.Value(0)).current;
 
@@ -56,7 +56,7 @@ const confStyles = StyleSheet.create({
 });
 
 
-// Info card component
+//info card component
 function InfoCard({ icon, title, items, color = COLORS.greenDeep }) {
   if (!items || items.length === 0) return null;
   return (
@@ -96,7 +96,7 @@ const cardStyles = StyleSheet.create({
 });
 
 
-// ── MAIN RESULT SCREEN ────────────────────────────────────────────────────────
+//main result screen
 import { useLocalSearchParams } from 'expo-router';
 import { router } from 'expo-router';
 
@@ -106,7 +106,7 @@ export default function ResultScreen() {
   const isHealthy = result.disease_key?.toLowerCase().includes('healthy');
   const isUncertain = result.disease_key?.toLowerCase().includes('uncertain');   
 
-  // Trigger haptic feedback on load
+  //trigger a haptic feedback on load
   useEffect(() => {
     Haptics.notificationAsync(
       isHealthy
@@ -127,10 +127,10 @@ export default function ResultScreen() {
       <StatusBar barStyle="light-content" backgroundColor={headerColor} />
       <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
 
-        {/* ── HEADER ── */}
+        {/*header*/}
         <LinearGradient colors={[headerColor, COLORS.greenDeep]} style={styles.header}>
 
-          {/* Back Button */}
+          {/*back button*/}
           <TouchableOpacity
             style={styles.backBtn}
             onPress={() => router.back()}
@@ -138,23 +138,23 @@ export default function ResultScreen() {
             <Text style={styles.backBtnText}>← Back</Text>
           </TouchableOpacity>
 
-          {/* Uploaded Image */}
+          {/*uploaded image */}
           {imageUri && (
             <View style={styles.imageWrap}>
               <Image source={{ uri: imageUri }} style={styles.image} />
             </View>
           )}
 
-          {/* Badge */}
+          {/*badge*/}
           <View style={[styles.badge, { backgroundColor: badgeColor }]}>
             <Text style={[styles.badgeText, { color: badgeText }]}>{badgeLabel}</Text>
           </View>
 
-          {/* Disease Name */}
+          {/*disease name*/}
           <Text style={styles.diseaseName}>{result.name}</Text>
           <Text style={styles.cropLabel}>Crop: {result.crop}</Text>
 
-          {/* Confidence */}
+          {/*confidence*/}
           <View style={styles.confWrap}>
             <Text style={styles.confLabel}>Confidence</Text>
             <ConfidenceBar confidence={result.confidence} />
@@ -162,11 +162,11 @@ export default function ResultScreen() {
 
         </LinearGradient>
 
-        {/* ── CONTENT ── */}
+        {/*content*/}
         <View style={styles.body}>
           
 
-          {/* Uncertain Message */}
+          {/*uncertain message*/}
           {isUncertain && (
             <View style={[cardStyles.card, { marginBottom: SPACING.md }]}>
               <View style={cardStyles.titleRow}>
@@ -178,7 +178,7 @@ export default function ResultScreen() {
           )}
 
 
-          {/* Healthy Message */} 
+          {/*healthy message*/} 
           {!isUncertain && isHealthy && (
             <View style={[cardStyles.card, { marginBottom: SPACING.md }]}>
               <View style={cardStyles.titleRow}>
@@ -189,7 +189,7 @@ export default function ResultScreen() {
             </View>
           )}
 
-          {/* Description */}
+          {/*description*/}
           {!isUncertain && !isHealthy && (
             <View style={[cardStyles.card, { marginBottom: SPACING.md }]}>
               <View style={cardStyles.titleRow}>
@@ -200,7 +200,7 @@ export default function ResultScreen() {
             </View>
           )}
 
-          {/* Symptoms */}
+          {/*symptoms*/}
           {!isHealthy && !isUncertain && (
             <InfoCard
               icon="🔴"
@@ -210,7 +210,7 @@ export default function ResultScreen() {
             />
           )}
 
-          {/* Treatment */}
+          {/*treatment*/}
           {!isHealthy && !isUncertain && (
             <InfoCard
               icon="💊"
@@ -220,7 +220,7 @@ export default function ResultScreen() {
             />
           )}
 
-          {/* Prevention / Tips */}
+          {/*Prevention and tips */}
           {isUncertain ? (
             <InfoCard
               icon="💡"
@@ -237,7 +237,7 @@ export default function ResultScreen() {
             />
           )}
 
-          {/* Severity Indicator */}
+          {/*severity indicator*/}
           {!isHealthy && !isUncertain && (
             <View style={styles.severityCard}>
               <Text style={styles.severityTitle}>⚡ Act quickly!</Text>
@@ -248,7 +248,7 @@ export default function ResultScreen() {
             </View>
           )}
 
-          {/* Buttons */}
+          {/*buttons*/}
           <TouchableOpacity
             style={styles.primaryBtn}
             onPress={() => {
@@ -279,7 +279,7 @@ export default function ResultScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.greenDeep },
 
-  // Header
+  //header
   header: {
     paddingHorizontal: SPACING.lg,
     paddingTop: SPACING.md,
@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
   confWrap: { width: '100%' },
   confLabel: { color: COLORS.greenPale, fontSize: 12, opacity: 0.7, marginBottom: 4 },
 
-  // Body
+  //body
   body: {
     backgroundColor: COLORS.cream,
     borderTopLeftRadius: 28, borderTopRightRadius: 28,

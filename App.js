@@ -1,5 +1,5 @@
-// App.js — Root of the React Native app
-// Sets up navigation between screens
+//this is the root of the react native app
+//sets up navigation between screens
 
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
@@ -21,7 +21,7 @@ export default function App() {
           <StatusBar style="light" />
           <Stack.Navigator
             initialRouteName="Home"
-            screenOptions={{ headerShown: false }} // We use custom headers
+            screenOptions={{ headerShown: false }} // we use custom headers
           >
             <Stack.Screen name="Home"   component={HomeScreen}   />
             <Stack.Screen name="Result" component={ResultScreen} />
