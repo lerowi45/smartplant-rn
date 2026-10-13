@@ -10,7 +10,9 @@
       "backgroundColor": "#1a3a2a"
     },
     "android": {
+      "package": "com.smartplantai.app",
       "adaptiveIcon": {
+        "foregroundImage": "./src/assets/icon.png",
         "backgroundColor": "#1a3a2a"
       },
       "permissions": [
