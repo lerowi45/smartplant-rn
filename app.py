@@ -3,7 +3,9 @@
 
 import os
 import json
+import uuid
 import numpy as np
+from datetime import datetime, timezone
 from flask import Flask, request, jsonify
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
@@ -15,26 +17,204 @@ load_dotenv()
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
+app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'dev-secret-change-in-prod')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
+
+#database config
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///smartplant.db')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+#init extensions
+from flask_sqlalchemy import SQLAlchemy
+from flask_bcrypt import Bcrypt
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+
+db      = SQLAlchemy(app)
+bcrypt  = Bcrypt(app)
+jwt     = JWTManager(app)
 
 #gemini client
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 client = genai.Client(api_key=GEMINI_API_KEY)
 
-#cors
+#--------------------------------------------------------------------
+# DATABASE MODELS
+#--------------------------------------------------------------------
+
+class User(db.Model):
+    __tablename__ = 'users'
+    id         = db.Column(db.Integer, primary_key=True)
+    email      = db.Column(db.String(255), unique=True, nullable=False)
+    password   = db.Column(db.String(255), nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    scans      = db.relationship('Scan', backref='user', lazy=True, cascade='all, delete-orphan')
+
+class Scan(db.Model):
+    __tablename__ = 'scans'
+    id          = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id     = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    crop_type   = db.Column(db.String(50))
+    disease     = db.Column(db.String(255))
+    confidence  = db.Column(db.Float)
+    image_url   = db.Column(db.String(500))
+    timestamp   = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    def to_dict(self):
+        return {
+            'id':         self.id,
+            'crop_type':  self.crop_type,
+            'disease':    self.disease,
+            'confidence': self.confidence,
+            'image_url':  self.image_url,
+            'timestamp':  self.timestamp.isoformat(),
+        }
+
+#create tables on startup
+with app.app_context():
+    db.create_all()
+
+#--------------------------------------------------------------------
+# CORS
+#--------------------------------------------------------------------
+
 @app.after_request
 def add_cors_headers(response):
     response.headers['Access-Control-Allow-Origin']  = '*'
-    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, DELETE, OPTIONS'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
     return response
 
-#health check
+#--------------------------------------------------------------------
+# HEALTH CHECK
+#--------------------------------------------------------------------
+
 @app.route('/health', methods=['GET', 'OPTIONS'])
 def health():
     return jsonify({'status': 'ok', 'message': 'SmartPlant AI server is running'})
 
-#disease info database (30 classes)
+#--------------------------------------------------------------------
+# AUTH ENDPOINTS
+#--------------------------------------------------------------------
+
+@app.route('/register', methods=['POST', 'OPTIONS'])
+def register():
+    if request.method == 'OPTIONS':
+        return jsonify({}), 200
+
+    data     = request.get_json()
+    email    = data.get('email', '').strip().lower()
+    password = data.get('password', '')
+
+    if not email or not password:
+        return jsonify({'success': False, 'error': 'Email and password are required'}), 400
+
+    if len(password) < 6:
+        return jsonify({'success': False, 'error': 'Password must be at least 6 characters'}), 400
+
+    if User.query.filter_by(email=email).first():
+        return jsonify({'success': False, 'error': 'Email already registered'}), 409
+
+    hashed = bcrypt.generate_password_hash(password).decode('utf-8')
+    user   = User(email=email, password=hashed)
+    db.session.add(user)
+    db.session.commit()
+
+    token = create_access_token(identity=str(user.id))
+    return jsonify({
+        'success': True,
+        'token':   token,
+        'user':    {'id': user.id, 'email': user.email}
+    }), 201
+
+
+@app.route('/login', methods=['POST', 'OPTIONS'])
+def login():
+    if request.method == 'OPTIONS':
+        return jsonify({}), 200
+
+    data     = request.get_json()
+    email    = data.get('email', '').strip().lower()
+    password = data.get('password', '')
+
+    user = User.query.filter_by(email=email).first()
+    if not user or not bcrypt.check_password_hash(user.password, password):
+        return jsonify({'success': False, 'error': 'Invalid email or password'}), 401
+
+    token = create_access_token(identity=str(user.id))
+    return jsonify({
+        'success': True,
+        'token':   token,
+        'user':    {'id': user.id, 'email': user.email}
+    })
+
+#--------------------------------------------------------------------
+# SCANS ENDPOINTS (protected)
+#--------------------------------------------------------------------
+
+@app.route('/scans', methods=['GET', 'OPTIONS'])
+@jwt_required()
+def get_scans():
+    if request.method == 'OPTIONS':
+        return jsonify({}), 200
+
+    user_id = int(get_jwt_identity())
+    scans   = Scan.query.filter_by(user_id=user_id).order_by(Scan.timestamp.desc()).all()
+    return jsonify({'success': True, 'scans': [s.to_dict() for s in scans]})
+
+
+@app.route('/scans/<scan_id>', methods=['DELETE', 'OPTIONS'])
+@jwt_required()
+def delete_scan(scan_id):
+    if request.method == 'OPTIONS':
+        return jsonify({}), 200
+
+    user_id = int(get_jwt_identity())
+    scan    = Scan.query.filter_by(id=scan_id, user_id=user_id).first()
+
+    if not scan:
+        return jsonify({'success': False, 'error': 'Scan not found'}), 404
+
+    db.session.delete(scan)
+    db.session.commit()
+    return jsonify({'success': True})
+
+
+@app.route('/sync-scans', methods=['POST', 'OPTIONS'])
+@jwt_required()
+def sync_scans():
+    """Receive an array of local scans and save any that don't already exist."""
+    if request.method == 'OPTIONS':
+        return jsonify({}), 200
+
+    user_id = int(get_jwt_identity())
+    data    = request.get_json()
+    scans   = data.get('scans', [])
+    added   = 0
+
+    for s in scans:
+        scan_id = s.get('id')
+        #skip if this scan id already exists in the cloud
+        if scan_id and Scan.query.get(scan_id):
+            continue
+        new_scan = Scan(
+            id         = scan_id or str(uuid.uuid4()),
+            user_id    = user_id,
+            crop_type  = s.get('crop_type'),
+            disease    = s.get('disease'),
+            confidence = s.get('confidence'),
+            image_url  = s.get('image_url'),
+            timestamp  = datetime.fromisoformat(s['timestamp']) if s.get('timestamp') else datetime.now(timezone.utc),
+        )
+        db.session.add(new_scan)
+        added += 1
+
+    db.session.commit()
+    return jsonify({'success': True, 'added': added})
+
+#--------------------------------------------------------------------
+# DISEASE INFO DATABASE (30 classes)
+#--------------------------------------------------------------------
+
 DISEASE_INFO = {
     #cassava
     "Cassava_Cassava_Bacterial_Blight_CBB": {
@@ -293,7 +473,10 @@ DISEASE_INFO = {
     }
 }
 
-#class name map
+#--------------------------------------------------------------------
+# CLASS NAME MAP
+#--------------------------------------------------------------------
+
 CLASS_NAME_MAP = {
     "Cassava_Cassava_Bacterial_Blight_CBB":           "Cassava_Cassava_Bacterial_Blight_CBB",
     "Cassava_Cassava_Brown_Streak_Disease_CBSD":       "Cassava_Cassava_Brown_Streak_Disease_CBSD",
@@ -327,7 +510,10 @@ CLASS_NAME_MAP = {
     "Tomato_healthy":                                 "Tomato_healthy",
 }
 
-#helpers
+#--------------------------------------------------------------------
+# HELPERS
+#--------------------------------------------------------------------
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -354,26 +540,30 @@ class CompatDense(keras.layers.Dense):
 
 def load_models():
     print("Loading MobileNetV2 model...")
-    
+
     #patch Dense.from_config to strip quantization_config before Keras sees it
     original_from_config = keras.layers.Dense.from_config
-    
+
     @classmethod
     def patched_from_config(cls, config):
         config.pop('quantization_config', None)
         return original_from_config.__func__(cls, config)
-    
+
     keras.layers.Dense.from_config = patched_from_config
-    
+
     model = keras.models.load_model(
         'models/plant_disease_model.keras',
         compile=False
     )
-    
+
     print(f"Model loaded successfully — {len(model.layers)} layers")
     return model
 
 plant_model = load_models()
+
+#--------------------------------------------------------------------
+# DISEASE DETECTION
+#--------------------------------------------------------------------
 
 # MobileNet2 prediction (primary)
 def predict_disease(image_path, model, crop_type=None):
@@ -459,7 +649,7 @@ def analyze():
     file.save(filepath)
 
     try:
-        #step 1: MobileNetV2 runs first (primary predictor) 
+        #step 1: MobileNetV2 runs first (primary predictor)
         disease_key, confidence = predict_disease(filepath, plant_model, crop_type)
 
         if confidence >= 75:
@@ -468,7 +658,7 @@ def analyze():
             disease_data = DISEASE_INFO.get(disease_key, DISEASE_INFO['Healthy'])
 
         else:
-            #step 2: low confidence then call Gemini as fallback 
+            #step 2: low confidence then call Gemini as fallback
             print(f"⚠️ MobileNetV2 confidence low ({confidence}%) — calling Gemini fallback")
             gemini_result = predict_with_gemini(filepath)
 
@@ -486,7 +676,7 @@ def analyze():
                     'prevention':  gemini_result.get('prevention', []),
                 }
             else:
-                #step 3: gemini unavailable then fall back to MobileNetV2 
+                #step 3: gemini unavailable then fall back to MobileNetV2
                 print(f"❌ Gemini unavailable — returning MobileNetV2 result")
 
                 if confidence < 50:
@@ -523,7 +713,10 @@ def analyze():
         traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
 
-#run
+#--------------------------------------------------------------------
+# RUN
+#--------------------------------------------------------------------
+
 if __name__ == '__main__':
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     app.run(debug=True, host='0.0.0.0', port=5001)

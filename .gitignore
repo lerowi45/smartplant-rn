@@ -6,4 +6,5 @@ pycache__
 static/uploads
 venv
 .vscode/
+mise.toml
 *run expo go the right way.txt

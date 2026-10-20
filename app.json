@@ -16,9 +16,10 @@
         "backgroundColor": "#1a3a2a"
       },
       "permissions": [
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE"
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "ios": {
@@ -38,6 +39,12 @@
       ],
       "expo-router",
       "expo-font"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "aeabd25b-8b0a-46e6-83f3-1379fd320b51"
+      }
+    }
   }
 }
