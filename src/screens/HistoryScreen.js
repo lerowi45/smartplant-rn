@@ -1,193 +1,155 @@
-
-//HistoryScreen.js
-//shows cloud scans when logged in, local scans when guest
-
 import React, { useState, useCallback } from 'react';
 import {
-  View, Text, FlatList, TouchableOpacity,
-  StyleSheet, Alert, ActivityIndicator, RefreshControl,
+  View, Text, StyleSheet, FlatList, Image,
+  TouchableOpacity, Alert, StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
-import { useAuth } from '../context/AuthContext';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useFocusEffect } from 'expo-router';
+import { router } from 'expo-router';
 import { getHistory, deleteScan, clearHistory } from '../utils/historyService';
-import { getCloudScans, deleteCloudScan } from '../utils/cloudHistoryService';
+import { COLORS, SPACING, RADIUS, SHADOW } from '../utils/theme';
 
-export default function HistoryScreen({ navigation }) {
-  const { token } = useAuth();
-  const [scans, setScans]         = useState([]);
-  const [loading, setLoading]     = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+export default function HistoryScreen() {
+  const [history, setHistory] = useState([]);
 
-  const isCloud = !!token;
-
-  //load scans whenever tab comes into focus
+  //reload history every time screen is focused
   useFocusEffect(
     useCallback(() => {
-      loadScans();
-    }, [token])
+      loadHistory();
+    }, [])
   );
 
-  const loadScans = async () => {
-    try {
-      setLoading(true);
-      const data = isCloud
-        ? await getCloudScans(token)
-        : await getHistory();
-      setScans(data);
-    } catch (e) {
-      console.error('Failed to load scans:', e);
-    } finally {
-      setLoading(false);
-    }
+  const loadHistory = async () => {
+    const data = await getHistory();
+    setHistory(data);
   };
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await loadScans();
-    setRefreshing(false);
-  };
-
-  const handleDelete = (scanId) => {
-    Alert.alert('Delete Scan', 'Remove this scan from history?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          if (isCloud) {
-            await deleteCloudScan(token, scanId);
-          } else {
-            await deleteScan(scanId);
-          }
-          setScans(prev => prev.filter(s => s.id !== scanId));
+  const handleDelete = (id) => {
+    Alert.alert(
+      'Delete Scan',
+      'Are you sure you want to delete this scan?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            await deleteScan(id);
+            loadHistory();
+          },
         },
-      },
-    ]);
+      ]
+    );
   };
 
   const handleClearAll = () => {
-    if (isCloud) {
-      Alert.alert('Clear All', 'To clear cloud history, delete scans one by one.');
-      return;
-    }
-    Alert.alert('Clear All History', 'This will delete all your local scans. Are you sure?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Clear All',
-        style: 'destructive',
-        onPress: async () => {
-          await clearHistory();
-          setScans([]);
+    Alert.alert(
+      'Clear History',
+      'Are you sure you want to delete all scans?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear All',
+          style: 'destructive',
+          onPress: async () => {
+            await clearHistory();
+            setHistory([]);
+          },
         },
-      },
-    ]);
+      ]
+    );
   };
 
-  //format a scan's disease name from either local or cloud format
-  const getDiseaseName = (scan) =>
-    scan.name || scan.disease || 'Unknown';
-
-  const getCropType = (scan) =>
-    scan.cropType || scan.crop_type || scan.crop || 'General';
-
-  const getConfidence = (scan) =>
-    scan.confidence != null ? `${Math.round(scan.confidence)}%` : '—';
-
-  const getDate = (scan) => {
-    const raw = scan.date || scan.timestamp;
-    if (!raw) return '';
-    return new Date(raw).toLocaleDateString('en-GB', {
-      day: '2-digit', month: 'short', year: 'numeric',
+  const handleViewScan = (scan) => {
+    router.push({
+      pathname: '/result',
+      params: {
+        result: JSON.stringify({ ...scan, success: true }),
+        imageUri: scan.imageUri,
+      },
     });
   };
 
-  const isHealthy = (scan) => {
-    const name = getDiseaseName(scan).toLowerCase();
-    return name.includes('healthy');
+  const formatDate = (isoString) => {
+    const date = new Date(isoString);
+    return date.toLocaleDateString('en-GB', {
+      day: 'numeric', month: 'short', year: 'numeric',
+      hour: '2-digit', minute: '2-digit',
+    });
   };
 
-  const renderScan = ({ item }) => (
-    <TouchableOpacity
-      style={styles.card}
-      onPress={() => navigation.navigate('Result', { result: buildResultObj(item) })}
-      activeOpacity={0.8}
-    >
-      <View style={styles.cardLeft}>
-        <View style={[styles.dot, isHealthy(item) ? styles.dotGreen : styles.dotRed]} />
-        <View style={styles.cardInfo}>
-          <Text style={styles.disease} numberOfLines={1}>{getDiseaseName(item)}</Text>
-          <Text style={styles.meta}>
-            {getCropType(item)} · {getConfidence(item)} · {getDate(item)}
-          </Text>
-        </View>
-      </View>
-      <TouchableOpacity
-        style={styles.deleteBtn}
-        onPress={() => handleDelete(item.id)}
-        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-      >
-        <Text style={styles.deleteIcon}>✕</Text>
-      </TouchableOpacity>
-    </TouchableOpacity>
-  );
+  const renderItem = ({ item }) => {
+    const isHealthy = item.disease_key === 'Healthy' || item.disease_key?.includes('healthy');
+    const isUncertain = item.disease_key === 'Uncertain';
 
-  //build a result object compatible with ResultScreen
-  const buildResultObj = (scan) => ({
-    success:     true,
-    name:        getDiseaseName(scan),
-    crop:        getCropType(scan),
-    confidence:  scan.confidence,
-    description: scan.description || '',
-    symptoms:    scan.symptoms    || [],
-    treatment:   scan.treatment   || [],
-    prevention:  scan.prevention  || [],
-  });
+    const badgeColor = isHealthy ? COLORS.successLight : isUncertain ? '#fff8e8' : COLORS.dangerLight;
+    const badgeText = isHealthy ? COLORS.success : isUncertain ? COLORS.warning : COLORS.danger;
+    const badgeLabel = isHealthy ? '✅ Healthy' : isUncertain ? '🔍 Uncertain' : '⚠️ Disease';
+
+    return (
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() => handleViewScan(item)}
+        activeOpacity={0.8}
+      >
+        {/*image*/}
+        <Image source={{ uri: item.imageUri }} style={styles.cardImage} />
+
+        {/*content*/}
+        <View style={styles.cardContent}>
+          <View style={[styles.badge, { backgroundColor: badgeColor }]}>
+            <Text style={[styles.badgeText, { color: badgeText }]}>{badgeLabel}</Text>
+          </View>
+          <Text style={styles.diseaseName} numberOfLines={1}>{item.name}</Text>
+          <Text style={styles.cropName}>{item.crop}</Text>
+          <Text style={styles.confidence}>Confidence: {item.confidence}%</Text>
+          <Text style={styles.date}>{formatDate(item.date)}</Text>
+        </View>
+
+        {/*delete button*/}
+        <TouchableOpacity
+          style={styles.deleteBtn}
+          onPress={() => handleDelete(item.id)}
+        >
+          <Text style={styles.deleteBtnText}>🗑️</Text>
+        </TouchableOpacity>
+      </TouchableOpacity>
+    );
+  };
 
   return (
-    <SafeAreaView style={styles.safe}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.title}>Scan History</Text>
-          <Text style={styles.subtitle}>
-            {isCloud ? '☁️ Cloud synced' : '📱 Local storage'}
-          </Text>
-        </View>
-        {scans.length > 0 && !isCloud && (
-          <TouchableOpacity onPress={handleClearAll}>
-            <Text style={styles.clearText}>Clear All</Text>
+    <SafeAreaView style={styles.safe} edges={['top']}>
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.greenDeep} />
+
+      {/*header*/}
+      <LinearGradient colors={[COLORS.greenDeep, COLORS.greenMid]} style={styles.header}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+          <Text style={styles.backBtnText}>← Back</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Scan History</Text>
+        <Text style={styles.headerSub}>{history.length} scan{history.length !== 1 ? 's' : ''} saved</Text>
+        {history.length > 0 && (
+          <TouchableOpacity style={styles.clearBtn} onPress={handleClearAll}>
+            <Text style={styles.clearBtnText}>Clear All</Text>
           </TouchableOpacity>
         )}
-      </View>
+      </LinearGradient>
 
-      {/* Content */}
-      {loading ? (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#4caf50" />
-        </View>
-      ) : scans.length === 0 ? (
-        <View style={styles.centered}>
-          <Text style={styles.emptyIcon}>🔍</Text>
+      {/*list*/}
+      {history.length === 0 ? (
+        <View style={styles.empty}>
+          <Text style={styles.emptyIcon}>🌿</Text>
           <Text style={styles.emptyTitle}>No scans yet</Text>
-          <Text style={styles.emptySubtitle}>
-            Scan a plant leaf to see your history here
-          </Text>
+          <Text style={styles.emptySub}>Your scan history will appear here after you analyse a plant.</Text>
         </View>
       ) : (
         <FlatList
-          data={scans}
-          keyExtractor={item => item.id?.toString()}
-          renderItem={renderScan}
+          data={history}
+          keyExtractor={item => item.id}
+          renderItem={renderItem}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor="#4caf50"
-            />
-          }
         />
       )}
     </SafeAreaView>
@@ -195,101 +157,65 @@ export default function HistoryScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: '#0f2318',
-  },
+  safe: { flex: 1, backgroundColor: COLORS.cream },
+
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#1a3a2a',
+    paddingHorizontal: SPACING.lg,
+    paddingTop: SPACING.sm,
+    paddingBottom: SPACING.lg,
   },
-  title: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#fff',
+  backBtn: {
+    paddingVertical: SPACING.xs,
+    marginBottom: SPACING.sm,
   },
-  subtitle: {
-    fontSize: 12,
-    color: '#4caf50',
-    marginTop: 2,
+  backBtnText: { color: COLORS.greenPale, fontSize: 15, fontWeight: '600' },
+  headerTitle: { fontSize: 24, fontWeight: '900', color: COLORS.white },
+  headerSub: { fontSize: 13, color: COLORS.greenPale, opacity: 0.8, marginTop: 2 },
+  clearBtn: {
+    marginTop: SPACING.sm,
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs,
+    borderRadius: RADIUS.full,
   },
-  clearText: {
-    color: '#e74c3c',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  list: {
-    padding: 16,
-    gap: 10,
-  },
+  clearBtnText: { color: COLORS.white, fontSize: 13, fontWeight: '600' },
+
+  list: { padding: SPACING.lg },
+
   card: {
-    backgroundColor: '#1a3a2a',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    backgroundColor: COLORS.white,
+    borderRadius: RADIUS.md,
+    marginBottom: SPACING.md,
+    overflow: 'hidden',
+    ...SHADOW.card,
   },
-  cardLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    gap: 12,
+  cardImage: { width: 90, height: 90 },
+  cardContent: { flex: 1, padding: SPACING.md },
+  badge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 2,
+    borderRadius: RADIUS.full,
+    marginBottom: SPACING.xs,
   },
-  dot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  dotGreen: { backgroundColor: '#4caf50' },
-  dotRed:   { backgroundColor: '#e74c3c' },
-  cardInfo: {
-    flex: 1,
-  },
-  disease: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '600',
-    marginBottom: 3,
-  },
-  meta: {
-    color: '#888',
-    fontSize: 12,
-  },
+  badgeText: { fontSize: 11, fontWeight: '700' },
+  diseaseName: { fontSize: 14, fontWeight: '800', color: COLORS.textDark, marginBottom: 2 },
+  cropName: { fontSize: 12, color: COLORS.textSoft, marginBottom: 2 },
+  confidence: { fontSize: 12, color: COLORS.textSoft, marginBottom: 2 },
+  date: { fontSize: 11, color: COLORS.textSoft, opacity: 0.7 },
+
   deleteBtn: {
-    padding: 4,
-    marginLeft: 8,
-  },
-  deleteIcon: {
-    color: '#666',
-    fontSize: 14,
-  },
-  centered: {
-    flex: 1,
+    padding: SPACING.sm,
     justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 32,
   },
-  emptyIcon: {
-    fontSize: 48,
-    marginBottom: 12,
+  deleteBtnText: { fontSize: 18 },
+
+  empty: {
+    flex: 1, alignItems: 'center', justifyContent: 'center', padding: SPACING.xl,
   },
-  emptyTitle: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 6,
-  },
-  emptySubtitle: {
-    color: '#888',
-    fontSize: 14,
-    textAlign: 'center',
-  },
+  emptyIcon: { fontSize: 60, marginBottom: SPACING.md },
+  emptyTitle: { fontSize: 20, fontWeight: '800', color: COLORS.textDark, marginBottom: SPACING.sm },
+  emptySub: { fontSize: 14, color: COLORS.textSoft, textAlign: 'center', lineHeight: 22 },
 });

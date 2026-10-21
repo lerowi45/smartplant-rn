@@ -1,7 +1,4 @@
-
-//LoginScreen.js
-//allows users to log in or navigate to register
-
+// LoginScreen.js
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
@@ -9,11 +6,12 @@ import {
   Platform, ScrollView, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 import { useAuth } from '../context/AuthContext';
 import { getHistory } from '../utils/historyService';
 import { syncLocalScansToCloud } from '../utils/cloudHistoryService';
 
-export default function LoginScreen({ navigation }) {
+export default function LoginScreen() {
   const { login } = useAuth();
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
@@ -27,12 +25,12 @@ export default function LoginScreen({ navigation }) {
     setLoading(true);
     try {
       const result = await login(email.trim().toLowerCase(), password);
-      //merge local scans to cloud after login
+      // merge local scans to cloud after login
       const localScans = await getHistory();
       if (localScans.length > 0) {
         await syncLocalScansToCloud(result.token, localScans);
       }
-      navigation.replace('MainTabs');
+      router.replace('/(tabs)');
     } catch (e) {
       Alert.alert('Login failed', e.message);
     } finally {
@@ -50,8 +48,8 @@ export default function LoginScreen({ navigation }) {
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.logo}>🌿</Text>
-            <Text style={styles.title}>SmartPlant AI</Text>
-            <Text style={styles.subtitle}>Sign in to sync your scans</Text>
+            <Text style={styles.title}>Welcome Back</Text>
+            <Text style={styles.subtitle}>Sign in to sync your plant scans</Text>
           </View>
 
           {/* Form */}
@@ -71,7 +69,7 @@ export default function LoginScreen({ navigation }) {
             <Text style={styles.label}>Password</Text>
             <TextInput
               style={styles.input}
-              placeholder="••••••••"
+              placeholder="Your password"
               placeholderTextColor="#888"
               value={password}
               onChangeText={setPassword}
@@ -90,17 +88,17 @@ export default function LoginScreen({ navigation }) {
             </TouchableOpacity>
           </View>
 
-          {/* Footer links */}
+          {/* Footer */}
           <View style={styles.footer}>
-            <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+            <TouchableOpacity onPress={() => router.push('/register')}>
               <Text style={styles.link}>
-                Don't have an account? <Text style={styles.linkBold}>Register</Text>
+                Don't have an account? <Text style={styles.linkBold}>Create one</Text>
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.guestBtn}
-              onPress={() => navigation.replace('MainTabs')}
+              onPress={() => router.replace('/(tabs)')}
             >
               <Text style={styles.guestText}>Continue as Guest</Text>
             </TouchableOpacity>
@@ -112,86 +110,31 @@ export default function LoginScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: '#0f2318',
-  },
+  safe: { flex: 1, backgroundColor: '#0f2318' },
   container: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 28,
-    paddingVertical: 40,
+    flexGrow: 1, justifyContent: 'center',
+    paddingHorizontal: 28, paddingVertical: 40,
   },
-  header: {
-    alignItems: 'center',
-    marginBottom: 40,
-  },
-  logo: {
-    fontSize: 56,
-    marginBottom: 8,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#4caf50',
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 15,
-    color: '#aaa',
-  },
-  form: {
-    marginBottom: 24,
-  },
-  label: {
-    color: '#ccc',
-    fontSize: 14,
-    marginBottom: 6,
-    marginTop: 16,
-  },
+  header: { alignItems: 'center', marginBottom: 40 },
+  logo: { fontSize: 56, marginBottom: 8 },
+  title: { fontSize: 28, fontWeight: '700', color: '#4caf50', marginBottom: 4 },
+  subtitle: { fontSize: 15, color: '#aaa' },
+  form: { marginBottom: 24 },
+  label: { color: '#ccc', fontSize: 14, marginBottom: 6, marginTop: 16 },
   input: {
-    backgroundColor: '#1a3a2a',
-    borderWidth: 1,
-    borderColor: '#2e5c3a',
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 13,
-    color: '#fff',
-    fontSize: 15,
+    backgroundColor: '#1a3a2a', borderWidth: 1, borderColor: '#2e5c3a',
+    borderRadius: 10, paddingHorizontal: 16, paddingVertical: 13,
+    color: '#fff', fontSize: 15,
   },
   button: {
-    backgroundColor: '#4caf50',
-    borderRadius: 10,
-    paddingVertical: 15,
-    alignItems: 'center',
-    marginTop: 28,
+    backgroundColor: '#4caf50', borderRadius: 10,
+    paddingVertical: 15, alignItems: 'center', marginTop: 28,
   },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  footer: {
-    alignItems: 'center',
-    gap: 16,
-  },
-  link: {
-    color: '#aaa',
-    fontSize: 14,
-  },
-  linkBold: {
-    color: '#4caf50',
-    fontWeight: '600',
-  },
-  guestBtn: {
-    paddingVertical: 10,
-  },
-  guestText: {
-    color: '#666',
-    fontSize: 14,
-    textDecorationLine: 'underline',
-  },
+  buttonDisabled: { opacity: 0.6 },
+  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  footer: { alignItems: 'center', gap: 16 },
+  link: { color: '#aaa', fontSize: 14 },
+  linkBold: { color: '#4caf50', fontWeight: '600' },
+  guestBtn: { paddingVertical: 10 },
+  guestText: { color: '#666', fontSize: 14, textDecorationLine: 'underline' },
 });

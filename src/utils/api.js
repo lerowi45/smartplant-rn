@@ -13,7 +13,7 @@
 //the phone and laptop must be on the SAME Wi-Fi network for local testing!
 
 //export const API_BASE_URL = 'https://smartplant-rn-production.up.railway.app'; // ← UPDATE THIS (to the IP and port of your Flask server)
-export const API_BASE_URL = 'http://192.168.43.110:5001'; // ← UPDATE THIS (to the IP and port of your Flask server)
+export const API_BASE_URL = 'https://glacial-padded-fastness.ngrok-free.dev'; // ← UPDATE THIS (to the IP and port of your Flask server)
 
 //Desease detection
 

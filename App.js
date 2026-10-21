@@ -70,7 +70,7 @@ export default function App() {
           <NavigationContainer>
             <StatusBar style="light" />
             <Stack.Navigator
-              initialRouteName="Login"
+              initialRouteName="MainTabs"
               screenOptions={{ headerShown: false }}
             >
               {/* Auth screens */}

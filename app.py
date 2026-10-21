@@ -203,7 +203,7 @@ def sync_scans():
             disease    = s.get('disease'),
             confidence = s.get('confidence'),
             image_url  = s.get('image_url'),
-            timestamp  = datetime.fromisoformat(s['timestamp']) if s.get('timestamp') else datetime.now(timezone.utc),
+            timestamp = datetime.fromisoformat(s['timestamp'].replace('Z', '+00:00')) if s.get('timestamp') else datetime.now(timezone.utc),
         )
         db.session.add(new_scan)
         added += 1

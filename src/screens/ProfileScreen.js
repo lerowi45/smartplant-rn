@@ -1,22 +1,19 @@
-
-//ProfileScreen.js
-//shows user info and lets them log out
-//if not logged in, prompts to sign in or register
-
+// ProfileScreen.js
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
   Alert, ActivityIndicator, ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 import { useAuth } from '../context/AuthContext';
 import { getCloudScans } from '../utils/cloudHistoryService';
 import { getHistory } from '../utils/historyService';
 
-export default function ProfileScreen({ navigation }) {
+export default function ProfileScreen() {
   const { user, token, logout } = useAuth();
-  const [scanCount, setScanCount]   = useState(null);
-  const [loading, setLoading]       = useState(false);
+  const [scanCount, setScanCount] = useState(null);
+  const [loading, setLoading]     = useState(false);
 
   useEffect(() => {
     loadScanCount();
@@ -55,7 +52,7 @@ export default function ProfileScreen({ navigation }) {
     );
   };
 
-  //guest view
+  // Guest view
   if (!user) {
     return (
       <SafeAreaView style={styles.safe}>
@@ -71,20 +68,22 @@ export default function ProfileScreen({ navigation }) {
           <View style={styles.infoBox}>
             <Text style={styles.infoIcon}>📱</Text>
             <Text style={styles.infoText}>
-              {scanCount !== null ? `${scanCount} scan${scanCount !== 1 ? 's' : ''} saved locally` : 'Loading scans...'}
+              {scanCount !== null
+                ? `${scanCount} scan${scanCount !== 1 ? 's' : ''} saved locally`
+                : 'Loading scans...'}
             </Text>
           </View>
 
           <TouchableOpacity
             style={styles.primaryBtn}
-            onPress={() => navigation.navigate('Login')}
+            onPress={() => router.push('/login')}
           >
             <Text style={styles.primaryBtnText}>Sign In</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.secondaryBtn}
-            onPress={() => navigation.navigate('Register')}
+            onPress={() => router.push('/register')}
           >
             <Text style={styles.secondaryBtnText}>Create Account</Text>
           </TouchableOpacity>
@@ -93,11 +92,10 @@ export default function ProfileScreen({ navigation }) {
     );
   }
 
-  //logged-in view
+  // Logged-in view
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container}>
-        {/* Avatar + name */}
         <View style={styles.header}>
           <View style={styles.avatarCircle}>
             <Text style={styles.avatarLetter}>
@@ -108,17 +106,13 @@ export default function ProfileScreen({ navigation }) {
           <Text style={styles.badge}>✓ Cloud Sync Active</Text>
         </View>
 
-        {/* Stats */}
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
-            <Text style={styles.statNumber}>
-              {scanCount !== null ? scanCount : '—'}
-            </Text>
+            <Text style={styles.statNumber}>{scanCount !== null ? scanCount : '—'}</Text>
             <Text style={styles.statLabel}>Total Scans</Text>
           </View>
         </View>
 
-        {/* Logout */}
         <TouchableOpacity
           style={[styles.logoutBtn, loading && { opacity: 0.6 }]}
           onPress={handleLogout}
@@ -135,145 +129,64 @@ export default function ProfileScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: '#0f2318',
-  },
+  safe: { flex: 1, backgroundColor: '#0f2318' },
   container: {
-    flexGrow: 1,
-    paddingHorizontal: 24,
-    paddingVertical: 40,
-    alignItems: 'center',
+    flexGrow: 1, paddingHorizontal: 24,
+    paddingVertical: 40, alignItems: 'center',
   },
-  header: {
-    alignItems: 'center',
-    marginBottom: 32,
-  },
+  header: { alignItems: 'center', marginBottom: 32 },
   avatarCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 80, height: 80, borderRadius: 40,
     backgroundColor: '#4caf50',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
+    justifyContent: 'center', alignItems: 'center', marginBottom: 12,
   },
-  avatarLetter: {
-    fontSize: 36,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  avatarGuest: {
-    fontSize: 64,
-    marginBottom: 12,
-  },
-  email: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#fff',
-    marginBottom: 6,
-  },
+  avatarLetter: { fontSize: 36, fontWeight: '700', color: '#fff' },
+  avatarGuest: { fontSize: 64, marginBottom: 12 },
+  email: { fontSize: 18, fontWeight: '600', color: '#fff', marginBottom: 6 },
   badge: {
-    fontSize: 13,
-    color: '#4caf50',
+    fontSize: 13, color: '#4caf50',
     backgroundColor: '#1a3a2a',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 20,
+    paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20,
   },
-  guestTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#fff',
-    marginBottom: 8,
-  },
+  guestTitle: { fontSize: 22, fontWeight: '700', color: '#fff', marginBottom: 8 },
   guestSubtitle: {
-    fontSize: 14,
-    color: '#aaa',
-    textAlign: 'center',
-    lineHeight: 20,
-    maxWidth: 280,
+    fontSize: 14, color: '#aaa', textAlign: 'center',
+    lineHeight: 20, maxWidth: 280,
   },
   infoBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1a3a2a',
-    borderRadius: 12,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    marginBottom: 32,
-    width: '100%',
-    gap: 12,
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: '#1a3a2a', borderRadius: 12,
+    paddingHorizontal: 20, paddingVertical: 16,
+    marginBottom: 32, width: '100%', gap: 12,
   },
-  infoIcon: {
-    fontSize: 22,
-  },
-  infoText: {
-    color: '#ccc',
-    fontSize: 15,
-  },
+  infoIcon: { fontSize: 22 },
+  infoText: { color: '#ccc', fontSize: 15 },
   statsRow: {
-    flexDirection: 'row',
-    gap: 16,
-    marginBottom: 40,
-    width: '100%',
-    justifyContent: 'center',
+    flexDirection: 'row', gap: 16,
+    marginBottom: 40, width: '100%', justifyContent: 'center',
   },
   statCard: {
-    backgroundColor: '#1a3a2a',
-    borderRadius: 14,
-    paddingVertical: 20,
-    paddingHorizontal: 32,
-    alignItems: 'center',
-    minWidth: 120,
+    backgroundColor: '#1a3a2a', borderRadius: 14,
+    paddingVertical: 20, paddingHorizontal: 32,
+    alignItems: 'center', minWidth: 120,
   },
-  statNumber: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#4caf50',
-  },
-  statLabel: {
-    fontSize: 13,
-    color: '#aaa',
-    marginTop: 4,
-  },
+  statNumber: { fontSize: 32, fontWeight: '700', color: '#4caf50' },
+  statLabel: { fontSize: 13, color: '#aaa', marginTop: 4 },
   primaryBtn: {
-    backgroundColor: '#4caf50',
-    borderRadius: 10,
-    paddingVertical: 15,
-    alignItems: 'center',
-    width: '100%',
-    marginBottom: 12,
+    backgroundColor: '#4caf50', borderRadius: 10,
+    paddingVertical: 15, alignItems: 'center',
+    width: '100%', marginBottom: 12,
   },
-  primaryBtnText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
+  primaryBtnText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   secondaryBtn: {
-    borderWidth: 1,
-    borderColor: '#4caf50',
-    borderRadius: 10,
-    paddingVertical: 15,
-    alignItems: 'center',
-    width: '100%',
+    borderWidth: 1, borderColor: '#4caf50', borderRadius: 10,
+    paddingVertical: 15, alignItems: 'center', width: '100%',
   },
-  secondaryBtnText: {
-    color: '#4caf50',
-    fontSize: 16,
-    fontWeight: '600',
-  },
+  secondaryBtnText: { color: '#4caf50', fontSize: 16, fontWeight: '600' },
   logoutBtn: {
-    backgroundColor: '#c0392b',
-    borderRadius: 10,
-    paddingVertical: 15,
-    alignItems: 'center',
-    width: '100%',
-    marginTop: 'auto',
+    backgroundColor: '#c0392b', borderRadius: 10,
+    paddingVertical: 15, alignItems: 'center',
+    width: '100%', marginTop: 'auto',
   },
-  logoutText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
+  logoutText: { color: '#fff', fontSize: 16, fontWeight: '600' },
 });
