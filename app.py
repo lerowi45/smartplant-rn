@@ -11,10 +11,6 @@ from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 from google import genai
 
-import os
-print(">>> DATABASE_URL:", repr(os.getenv('DATABASE_URL')))
-print(">>> All env vars with DB:", {k: v for k, v in os.environ.items() if 'DATA' in k or 'POSTGRES' in k or 'DB' in k})
-
 load_dotenv()
 
 #app config
@@ -726,4 +722,4 @@ def analyze():
 
 if __name__ == '__main__':
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-    app.run(debug=True, host='0.0.0.0', port=5001)
+    app.run(debug=False, host='0.0.0.0', port=5001)
